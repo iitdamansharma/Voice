@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from google import genai
 from openai import OpenAI
+from groq import Groq
 import os
 import traceback
 from datetime import datetime
@@ -21,12 +22,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load both API keys
+# Load all three API keys
 gemini_key = os.getenv("GEMINI_API_KEY")
 openai_key = os.getenv("OPENAI_API_KEY")
+groq_key = os.getenv("GROQ_API_KEY")
 
 gemini_client = None
 openai_client = None
+groq_client = None
 
 if gemini_key:
     try:
@@ -41,6 +44,13 @@ if openai_key:
         print("DEBUG: OpenAI Client initialized.")
     except Exception as e:
         print(f"WARN: OpenAI Client init failed: {e}")
+
+if groq_key:
+    try:
+        groq_client = Groq(api_key=groq_key)
+        print("DEBUG: Groq Client initialized.")
+    except Exception as e:
+        print(f"WARN: Groq Client init failed: {e}")
 
 class Question(BaseModel):
     question: str
@@ -128,11 +138,8 @@ async def ask_question(q: Question):
         except Exception as e:
             error_msg = str(e)
             print(f"WARN: Gemini failed: {error_msg}")
-            # Check if it's a rate limit error
             if "429" in error_msg or "quota" in error_msg.lower() or "rate" in error_msg.lower():
                 print("DEBUG: Gemini rate limited, falling back to OpenAI...")
-            else:
-                print(f"DEBUG: Gemini error (non-rate-limit): {error_msg}")
 
     # Fallback to OpenAI
     if openai_client:
@@ -152,10 +159,30 @@ async def ask_question(q: Question):
             print("DEBUG: OpenAI succeeded!")
             return {"answer": answer}
         except Exception as e:
-            print(f"ERROR: OpenAI also failed: {e}")
-            return {"answer": "Sorry, both AI services are unavailable. Please try again later."}
+            print(f"WARN: OpenAI failed: {e}, falling back to Groq...")
+
+    # Final fallback to Groq
+    if groq_client:
+        try:
+            print("DEBUG: Trying Groq (llama-3.1-70b-versatile)...")
+            response = groq_client.chat.completions.create(
+                model="llama-3.1-70b-versatile",
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": full_prompt}
+                ],
+                max_tokens=200,
+                temperature=0.7
+            )
+            
+            answer = response.choices[0].message.content.strip()
+            print("DEBUG: Groq succeeded!")
+            return {"answer": answer}
+        except Exception as e:
+            print(f"ERROR: Groq also failed: {e}")
+            return {"answer": "Sorry, all AI services are unavailable. Please try again later."}
     
-    # Both failed
+    # All three failed
     return {"answer": "Sorry, AI services are not configured. Please contact support."}
 
 if __name__ == "__main__":
