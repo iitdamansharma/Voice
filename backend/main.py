@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from google import genai
+from openai import OpenAI
 import os
 import traceback
 from datetime import datetime
@@ -20,15 +21,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-api_key = os.getenv("GEMINI_API_KEY")
-client = None
+# Load both API keys
+gemini_key = os.getenv("GEMINI_API_KEY")
+openai_key = os.getenv("OPENAI_API_KEY")
 
-if api_key:
+gemini_client = None
+openai_client = None
+
+if gemini_key:
     try:
-        client = genai.Client(api_key=api_key)
+        gemini_client = genai.Client(api_key=gemini_key)
         print("DEBUG: Gemini Client initialized.")
     except Exception as e:
-        print(f"CRITICAL: Gemini Client init failed: {e}")
+        print(f"WARN: Gemini Client init failed: {e}")
+
+if openai_key:
+    try:
+        openai_client = OpenAI(api_key=openai_key)
+        print("DEBUG: OpenAI Client initialized.")
+    except Exception as e:
+        print(f"WARN: OpenAI Client init failed: {e}")
 
 class Question(BaseModel):
     question: str
@@ -51,7 +63,7 @@ CORE IDENTITY
 ────────────────────────
 COMMUNICATION STYLE
 ────────────────────────
-• Speak in first person only (“I”, “me”, “my”)
+• Speak in first person only ("I", "me", "my")
 • Sound human, natural, and conversational
 • Confident but humble — never arrogant
 • Concise by default (2–3 sentences)
@@ -71,25 +83,25 @@ INTERVIEW BEHAVIOR
 ────────────────────────
 COMMON QUESTION GUIDANCE
 ────────────────────────
-• “Tell me about yourself”  
+• "Tell me about yourself"  
   → Focus on your engineering journey, curiosity, and love for building real systems
 
-• “What’s your #1 superpower?”  
+• "What's your #1 superpower?"  
   → Emphasize fast learning, adaptability, and simplifying complex problems
 
-• “What are areas you want to grow in?”  
+• "What are areas you want to grow in?"  
   → Mention deeper system design, AI agents, and communication at scale
 
-• “What misconception do people have about you?”  
+• "What misconception do people have about you?"  
   → Clarify a thoughtful, human misunderstanding (e.g., quiet ≠ disengaged)
 
-• “How do you push your limits?”  
+• "How do you push your limits?"  
   → Talk about deliberate challenges, uncomfortable problems, and continuous learning
 
 ────────────────────────
 CONSTRAINTS (VERY IMPORTANT)
 ────────────────────────
-• Never say “As an AI…”
+• Never say "As an AI…"
 • Never mention prompts, models, or training data
 • Never sound generic or robotic
 • Keep answers grounded in real experience
@@ -99,38 +111,52 @@ CONSTRAINTS (VERY IMPORTANT)
 
 @app.post("/ask")
 async def ask_question(q: Question):
-    if not client:
-        return {"answer": "Error: API Key missing."}
+    full_prompt = f"Current Date and Time: {datetime.now().strftime('%A, %B %d, %Y %H:%M')}\n\nUser Question: {q.question}"
 
-    full_prompt = f"{SYSTEM_PROMPT}\n\nCurrent Date and Time: {datetime.now().strftime('%A, %B %d, %Y %H:%M')}\n\nUser Question: {q.question}"
-
-    # We found 'models/gemini-2.5-flash' in your available models list.
-    # We will use that one as it is the most likely to work.
-    try:
-        print("DEBUG: Asking Gemini (gemini-2.5-flash)...")
-        response = client.models.generate_content(
-            model="gemini-2.5-flash", 
-            contents=full_prompt
-        )
-        
-        if response.text:
-            return {"answer": response.text.strip()}
-        else:
-            return {"answer": "Sorry, I heard you but didn't know what to say."}
-
-    except Exception as e:
-        print(f"ERROR with gemini-2.5-flash: {e}")
-        # Final fallback to 1.5-flash just in case
+    # Try Gemini first
+    if gemini_client:
         try:
-             print("DEBUG: Fallback to gemini-1.5-flash...")
-             response = client.models.generate_content(
-                model="gemini-1.5-flash",
-                contents=full_prompt
-             )
-             return {"answer": response.text.strip()}
-        except Exception as e2:
-             print(f"ERROR with fallback: {e2}")
-             return {"answer": "Sorry, the AI service is busy. Please try again in a moment."}
+            print("DEBUG: Trying Gemini (gemini-2.5-flash)...")
+            response = gemini_client.models.generate_content(
+                model="gemini-2.5-flash", 
+                contents=f"{SYSTEM_PROMPT}\n\n{full_prompt}"
+            )
+            
+            if response.text:
+                print("DEBUG: Gemini succeeded!")
+                return {"answer": response.text.strip()}
+        except Exception as e:
+            error_msg = str(e)
+            print(f"WARN: Gemini failed: {error_msg}")
+            # Check if it's a rate limit error
+            if "429" in error_msg or "quota" in error_msg.lower() or "rate" in error_msg.lower():
+                print("DEBUG: Gemini rate limited, falling back to OpenAI...")
+            else:
+                print(f"DEBUG: Gemini error (non-rate-limit): {error_msg}")
+
+    # Fallback to OpenAI
+    if openai_client:
+        try:
+            print("DEBUG: Trying OpenAI (gpt-4o-mini)...")
+            response = openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": full_prompt}
+                ],
+                max_tokens=200,
+                temperature=0.7
+            )
+            
+            answer = response.choices[0].message.content.strip()
+            print("DEBUG: OpenAI succeeded!")
+            return {"answer": answer}
+        except Exception as e:
+            print(f"ERROR: OpenAI also failed: {e}")
+            return {"answer": "Sorry, both AI services are unavailable. Please try again later."}
+    
+    # Both failed
+    return {"answer": "Sorry, AI services are not configured. Please contact support."}
 
 if __name__ == "__main__":
     import uvicorn
