@@ -164,9 +164,9 @@ async def ask_question(q: Question):
     # Final fallback to Groq
     if groq_client:
         try:
-            print("DEBUG: Trying Groq (llama-3.1-70b-versatile)...")
+            print("DEBUG: Trying Groq (llama-3.3-70b-versatile)...")
             response = groq_client.chat.completions.create(
-                model="llama-3.1-70b-versatile",
+                model="llama-3.3-70b-versatile",
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": full_prompt}
