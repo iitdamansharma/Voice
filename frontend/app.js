@@ -92,7 +92,7 @@ async function processQuestion(question) {
     updateUIState('processing');
 
     try {
-        const response = await fetch('http://localhost:8001/ask', {
+        const response = await fetch('https://voice-2hoq.onrender.com/ask', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
