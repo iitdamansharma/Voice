@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/ask", "destination": "http://localhost:8001/ask" }
+  ]
+}

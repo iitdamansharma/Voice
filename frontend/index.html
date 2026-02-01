@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoiceMe - AI Interview Voice Agent</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="glass-background"></div>
+    <div class="container">
+        <header>
+            <h1>Voice<span class="highlight">Me</span></h1>
+            <p>AI Interview Voice Agent - Aman Sharma Persona</p>
+        </header>
+
+        <main>
+            <div class="mic-container">
+                <button id="micButton" class="mic-button" aria-label="Start Listening">
+                    <svg viewBox="0 0 24 24" class="mic-icon">
+                        <path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                        <path fill="currentColor" d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                    </svg>
+                </button>
+                <div class="ripple"></div>
+            </div>
+            
+            <div id="status" class="status-badge">Ready to Listen</div>
+
+            <div class="conversation-container">
+                <div class="card user-card">
+                    <div class="card-header">
+                        <span class="role-badge user-badge">You</span>
+                    </div>
+                    <div class="card-content">
+                        <p id="questionText" class="placeholder-text">Tap the mic and ask a question...</p>
+                    </div>
+                </div>
+
+                <div class="card ai-card">
+                    <div class="card-header">
+                        <span class="role-badge ai-badge">Aman Sharma</span>
+                    </div>
+                    <div class="card-content">
+                        <p id="answerText" class="placeholder-text">"I'm ready to answer your questions."</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
