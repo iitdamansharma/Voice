@@ -2,8 +2,8 @@
 
 // Configuration
 const CONFIG = {
-    backendUrl: window.location.hostname === 'localhost' 
-        ? 'http://localhost:8001/ask' 
+    backendUrl: (window.location.hostname === 'localhost' || window.location.protocol === 'file:')
+        ? 'http://localhost:8001/ask'
         : '/ask',
     speechSettings: {
         lang: 'en-US',
@@ -46,24 +46,24 @@ let recognition = null;
 
 function initializeSpeechRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
+
     if (!SpeechRecognition) {
         showBrowserCompatibilityWarning();
         return null;
     }
-    
+
     const recognitionInstance = new SpeechRecognition();
     recognitionInstance.continuous = false;
     recognitionInstance.interimResults = false;
     recognitionInstance.lang = CONFIG.speechSettings.lang;
     recognitionInstance.maxAlternatives = 1;
-    
+
     // Event Handlers
     recognitionInstance.onstart = handleSpeechStart;
     recognitionInstance.onend = handleSpeechEnd;
     recognitionInstance.onresult = handleSpeechResult;
     recognitionInstance.onerror = handleSpeechError;
-    
+
     return recognitionInstance;
 }
 
@@ -99,7 +99,7 @@ function handleSpeechEnd() {
 function handleSpeechResult(event) {
     const transcript = event.results[0][0].transcript;
     const confidence = event.results[0][0].confidence;
-    
+
     displayQuestion(transcript);
     addToHistory('user', transcript, confidence);
     processQuestion(transcript);
@@ -107,7 +107,7 @@ function handleSpeechResult(event) {
 
 function handleSpeechError(event) {
     console.error('Speech recognition error:', event.error);
-    
+
     const errorMessages = {
         'no-speech': 'No speech detected. Please try again.',
         'audio-capture': 'Microphone not accessible. Please check permissions.',
@@ -115,7 +115,7 @@ function handleSpeechError(event) {
         'network': 'Network error. Please check your connection.',
         'aborted': 'Speech recognition was aborted.'
     };
-    
+
     const errorMessage = errorMessages[event.error] || `Error: ${event.error}`;
     showErrorMessage(errorMessage);
     updateUIState('ready');
@@ -125,38 +125,38 @@ function handleSpeechError(event) {
 function updateUIState(newState) {
     const container = document.querySelector('.mic-container');
     const statusText = elements.statusDiv;
-    
+
     // Remove all state classes
     container.classList.remove('listening', 'processing', 'speaking');
-    
-    switch(newState) {
+
+    switch (newState) {
         case 'listening':
             container.classList.add('listening');
             statusText.textContent = '🎤 Listening...';
             statusText.style.color = '#f87171';
             statusText.style.borderColor = 'rgba(239, 68, 68, 0.3)';
             break;
-            
+
         case 'processing':
             container.classList.add('processing');
             statusText.textContent = '🧠 Thinking...';
             statusText.style.color = '#fbbf24';
             statusText.style.borderColor = 'rgba(251, 191, 36, 0.3)';
             break;
-            
+
         case 'speaking':
             container.classList.add('speaking');
             statusText.textContent = '🔊 Speaking...';
             statusText.style.color = '#34d399';
             statusText.style.borderColor = 'rgba(52, 211, 153, 0.3)';
             break;
-            
+
         case 'error':
             statusText.textContent = '❌ Error occurred';
             statusText.style.color = '#ef4444';
             statusText.style.borderColor = 'rgba(239, 68, 68, 0.3)';
             break;
-            
+
         default: // ready
             statusText.textContent = '✅ Ready to Listen';
             statusText.style.color = '#cbd5e1';
@@ -187,7 +187,7 @@ function animateCard(element) {
 function showErrorMessage(message) {
     elements.statusDiv.innerHTML = `<span class="error-message">❌ ${message}</span>`;
     elements.statusDiv.classList.add('error-state');
-    
+
     setTimeout(() => {
         elements.statusDiv.classList.remove('error-state');
         updateUIState('ready');
@@ -199,7 +199,7 @@ async function processQuestion(question) {
     updateUIState('processing');
     state.isProcessing = true;
     state.retryCount = 0;
-    
+
     try {
         const answer = await fetchAnswerWithRetry(question);
         displayAnswer(answer);
@@ -225,26 +225,26 @@ async function fetchAnswerWithRetry(question) {
                 },
                 body: JSON.stringify({ question: question })
             });
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
-            
+
             const data = await response.json();
-            
+
             if (!data.answer) {
                 throw new Error('Invalid response format');
             }
-            
+
             return data.answer;
-            
+
         } catch (error) {
             console.warn(`Attempt ${attempt} failed:`, error.message);
-            
+
             if (attempt === state.maxRetries) {
                 throw error;
             }
-            
+
             // Exponential backoff
             const delay = Math.pow(2, attempt) * 1000;
             await sleep(delay);
@@ -254,17 +254,17 @@ async function fetchAnswerWithRetry(question) {
 
 function handleProcessingError(error) {
     let errorMessage = 'Sorry, something went wrong.';
-    
+
     if (error.message.includes('fetch') || error.message.includes('network')) {
         errorMessage = 'Network error. Please check your connection.';
     } else if (error.message.includes('HTTP 5')) {
         errorMessage = 'Server error. Please try again later.';
     }
-    
+
     elements.answerText.textContent = errorMessage;
     showErrorMessage(errorMessage);
     updateUIState('error');
-    
+
     // Show retry button
     if (elements.retryButton) {
         elements.retryButton.style.display = 'inline-block';
@@ -282,44 +282,44 @@ function speakAnswer(text) {
         updateUIState('ready');
         return;
     }
-    
+
     // Cancel any current speech
     window.speechSynthesis.cancel();
-    
+
     state.isSpeaking = true;
     updateUIState('speaking');
-    
+
     const utterance = new SpeechSynthesisUtterance(text);
-    
+
     // Apply speech settings
     utterance.rate = CONFIG.speechSettings.rate;
     utterance.pitch = CONFIG.speechSettings.pitch;
     utterance.volume = CONFIG.speechSettings.volume;
     utterance.lang = CONFIG.speechSettings.lang;
-    
+
     // Voice selection
     const voices = window.speechSynthesis.getVoices();
     const preferredVoice = selectBestVoice(voices);
     if (preferredVoice) {
         utterance.voice = preferredVoice;
     }
-    
+
     // Event handlers
     utterance.onstart = () => {
         state.isSpeaking = true;
     };
-    
+
     utterance.onend = () => {
         state.isSpeaking = false;
         updateUIState('ready');
     };
-    
+
     utterance.onerror = (event) => {
         console.error('Speech synthesis error:', event.error);
         state.isSpeaking = false;
         updateUIState('ready');
     };
-    
+
     state.currentUtterance = utterance;
     window.speechSynthesis.speak(utterance);
 }
@@ -334,13 +334,13 @@ function selectBestVoice(voices) {
         'Daniel',
         'Samantha'
     ];
-    
+
     // Try preferred voices first
     for (const pref of preferences) {
         const voice = voices.find(v => v.name.includes(pref));
         if (voice) return voice;
     }
-    
+
     // Fallback to any English voice
     return voices.find(v => v.lang.startsWith('en')) || voices[0];
 }
@@ -353,20 +353,20 @@ function addToHistory(role, text, confidence = 1.0) {
         confidence,
         timestamp: new Date().toISOString()
     };
-    
+
     state.conversationHistory.unshift(historyItem);
-    
+
     // Limit history size
     if (state.conversationHistory.length > CONFIG.uiSettings.maxHistoryItems) {
         state.conversationHistory.pop();
     }
-    
+
     updateConversationHistoryDisplay();
 }
 
 function updateConversationHistoryDisplay() {
     if (!elements.conversationHistory) return;
-    
+
     const historyHTML = state.conversationHistory.map(item => `
         <div class="history-item ${item.role}">
             <span class="history-role">${item.role === 'user' ? '👤 You' : '🤖 Aman'}</span>
@@ -374,7 +374,7 @@ function updateConversationHistoryDisplay() {
             <span class="history-time">${formatTimestamp(item.timestamp)}</span>
         </div>
     `).join('');
-    
+
     elements.conversationHistory.innerHTML = historyHTML;
 }
 
@@ -395,12 +395,12 @@ function setupEventListeners() {
     if (elements.micButton) {
         elements.micButton.addEventListener('click', toggleListening);
     }
-    
+
     // Retry button
     if (elements.retryButton) {
         elements.retryButton.addEventListener('click', handleRetry);
     }
-    
+
     // Text input submission
     if (elements.submitButton && elements.textInput) {
         elements.submitButton.addEventListener('click', handleTextInput);
@@ -408,10 +408,10 @@ function setupEventListeners() {
             if (e.key === 'Enter') handleTextInput();
         });
     }
-    
+
     // Keyboard shortcuts
     document.addEventListener('keydown', handleKeyboardShortcuts);
-    
+
     // Voice availability
     if ('speechSynthesis' in window) {
         window.speechSynthesis.onvoiceschanged = () => {
@@ -425,7 +425,7 @@ function toggleListening() {
         showBrowserCompatibilityWarning();
         return;
     }
-    
+
     if (state.isListening) {
         recognition.stop();
     } else {
@@ -437,12 +437,12 @@ function handleRetry() {
     if (state.conversationHistory.length > 0) {
         const lastUserQuestion = state.conversationHistory
             .filter(item => item.role === 'user')[0];
-        
+
         if (lastUserQuestion) {
             processQuestion(lastUserQuestion.text);
         }
     }
-    
+
     if (elements.retryButton) {
         elements.retryButton.style.display = 'none';
     }
@@ -450,9 +450,9 @@ function handleRetry() {
 
 function handleTextInput() {
     const text = elements.textInput.value.trim();
-    
+
     if (!text) return;
-    
+
     displayQuestion(text);
     addToHistory('user', text);
     processQuestion(text);
@@ -465,7 +465,7 @@ function handleKeyboardShortcuts(e) {
         e.preventDefault();
         toggleListening();
     }
-    
+
     // Escape to stop speaking
     if (e.code === 'Escape' && state.isSpeaking) {
         window.speechSynthesis.cancel();
@@ -477,21 +477,21 @@ function handleKeyboardShortcuts(e) {
 // Initialize Application
 function initializeApp() {
     console.log('Initializing VoiceMe...');
-    
+
     // Initialize speech recognition
     recognition = initializeSpeechRecognition();
-    
+
     // Setup event listeners
     setupEventListeners();
-    
+
     // Load voices
     if ('speechSynthesis' in window) {
         window.speechSynthesis.getVoices();
     }
-    
+
     // Initial UI state
     updateUIState('ready');
-    
+
     console.log('VoiceMe initialized successfully!');
 }
 
