@@ -4,7 +4,7 @@
 const CONFIG = {
     backendUrl: (window.location.hostname === 'localhost' || window.location.protocol === 'file:')
         ? 'http://localhost:8001/ask'
-        : '/ask',
+        : 'https://voice-2hoq.onrender.com/ask',
     speechSettings: {
         lang: 'en-US',
         rate: 1.0,

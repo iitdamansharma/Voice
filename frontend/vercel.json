@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "source": "/ask", "destination": "http://localhost:8001/ask" }
+    { "source": "/ask", "destination": "https://voice-2hoq.onrender.com/ask" }
   ]
 }
