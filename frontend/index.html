@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,29 +9,43 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <meta name="description"
+        content="VoiceMe - An interactive AI voice agent designed to simulate real human interviews with the Aman Sharma persona.">
+    <script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
 </head>
+
 <body>
     <div class="glass-background"></div>
     <div class="container">
         <header>
-            <h1>Voice<span class="highlight">Me</span></h1>
-            <p>AI Interview Voice Agent - Aman Sharma Persona</p>
+            <h1>Voice<span>Me</span></h1>
+            <p class="subtitle">AI Interview Voice Agent - Aman Sharma Persona</p>
         </header>
 
         <main>
+            <!-- Microphone Section -->
             <div class="mic-container">
-                <button id="micButton" class="mic-button" aria-label="Start Listening">
+                <button id="micButton" class="mic-button" aria-label="Start Listening"
+                    title="Press Space or Click to Talk">
                     <svg viewBox="0 0 24 24" class="mic-icon">
-                        <path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                        <path fill="currentColor" d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                        <path fill="currentColor"
+                            d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+                        <path fill="currentColor"
+                            d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
                     </svg>
                 </button>
                 <div class="ripple"></div>
             </div>
-            
-            <div id="status" class="status-badge">Ready to Listen</div>
 
+            <!-- Status Indicator -->
+            <div id="status" class="status-badge">✅ Ready to Listen</div>
+
+            <!-- Retry Button (Hidden by default) -->
+            <button id="retryButton" aria-label="Retry Last Question">🔄 Retry Last Question</button>
+
+            <!-- Conversation Display -->
             <div class="conversation-container">
+                <!-- User Question Card -->
                 <div class="card user-card">
                     <div class="card-header">
                         <span class="role-badge user-badge">You</span>
@@ -40,6 +55,7 @@
                     </div>
                 </div>
 
+                <!-- AI Answer Card -->
                 <div class="card ai-card">
                     <div class="card-header">
                         <span class="role-badge ai-badge">Aman Sharma</span>
@@ -49,8 +65,27 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Text Input Fallback -->
+            <div class="text-input-container">
+                <input type="text" id="textInput" placeholder="Type your question here..."
+                    aria-label="Type your question" maxlength="500">
+                <button id="submitButton" aria-label="Submit Question">Send</button>
+            </div>
+
+            <!-- Conversation History -->
+            <div class="conversation-history" id="conversationHistory" aria-label="Conversation History">
+                <!-- History items will be dynamically added here -->
+            </div>
         </main>
+
+        <!-- Keyboard Shortcuts Help -->
+        <div style="margin-top: 2rem; color: #64748b; font-size: 0.85rem;">
+            <p>⌨️ <strong>Keyboard Shortcuts:</strong> Space = Toggle Mic | Enter = Send Text | Esc = Stop Speaking</p>
+        </div>
     </div>
+
     <script src="app.js"></script>
 </body>
+
 </html>
